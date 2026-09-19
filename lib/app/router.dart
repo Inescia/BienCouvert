@@ -66,15 +66,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      // Hors de /horses : après validation on go('/') sans retomber sur la liste.
+      GoRoute(
+        path: '/horses/new',
+        builder: (context, state) =>
+            const OnboardingHorseScreen(isAdditional: true),
+      ),
       GoRoute(
         path: '/horses',
         builder: (context, state) => const HorsesScreen(),
         routes: [
-          GoRoute(
-            path: 'new',
-            builder: (context, state) =>
-                const OnboardingHorseScreen(isAdditional: true),
-          ),
           GoRoute(
             path: ':id',
             builder: (context, state) =>
