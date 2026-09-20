@@ -107,7 +107,9 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
           .read(settingsProvider.notifier)
           .completeOnboarding(disclaimerAccepted: _disclaimerAccepted);
     }
-    if (mounted) context.go('/');
+    if (!mounted) return;
+    // Accueil direct (recommandation du cheval fraîchement sélectionné).
+    context.go('/');
   }
 
   @override
@@ -116,6 +118,19 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
     final bottomInset = keyboardOpen
         ? AppSpacing.sm
         : AppSpacing.lg + MediaQuery.viewPaddingOf(context).bottom;
+    final headerPad = keyboardOpen
+        ? const EdgeInsets.fromLTRB(
+            AppSpacing.sm,
+            AppSpacing.xs,
+            AppSpacing.sm,
+            AppSpacing.xs,
+          )
+        : const EdgeInsets.fromLTRB(
+            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+          );
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -125,12 +140,7 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                ),
+                padding: headerPad,
                 child: Row(
                   children: [
                     Expanded(
@@ -141,7 +151,7 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 250),
                               margin: const EdgeInsets.symmetric(horizontal: 3),
-                              height: 5,
+                              height: keyboardOpen ? 3 : 4,
                               decoration: BoxDecoration(
                                 color: active
                                     ? AppColors.pine
@@ -155,6 +165,12 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
                     ),
                     if (widget.isAdditional)
                       IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
                         onPressed: () => context.pop(),
                         icon: const Icon(Icons.close_rounded),
                         tooltip: 'Annuler',
@@ -168,7 +184,10 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   onPageChanged: (i) => setState(() => _page = i),
                   children: [
-                    _NameStep(controller: _nameController),
+                    _NameStep(
+                      controller: _nameController,
+                      compact: keyboardOpen,
+                    ),
                     _ClippingStep(
                       clipping: _clipping,
                       onClippingChanged: (v) => setState(() => _clipping = v),
@@ -195,7 +214,7 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   AppSpacing.lg,
-                  AppSpacing.sm,
+                  keyboardOpen ? AppSpacing.xs : AppSpacing.sm,
                   AppSpacing.lg,
                   bottomInset,
                 ),
@@ -214,24 +233,38 @@ class _OnboardingHorseScreenState extends ConsumerState<OnboardingHorseScreen> {
 }
 
 class _NameStep extends StatelessWidget {
-  const _NameStep({required this.controller});
+  const _NameStep({required this.controller, this.compact = false});
   final TextEditingController controller;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final titleStyle = compact
+        ? Theme.of(context).textTheme.headlineMedium
+        : Theme.of(context).textTheme.headlineLarge;
+
     return AppKeyboardScroll(
-      padding: AppPagePadding.standard,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        compact ? AppSpacing.sm : AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: AppSpacing.xl),
-          const BrandMark(size: 88),
-          const SizedBox(height: AppSpacing.lg),
+          if (!compact) ...[
+            const SizedBox(height: AppSpacing.md),
+            const BrandMark(size: 72),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           Text(
-            'Comment s\'appelle\nton cheval ?',
-            style: Theme.of(context).textTheme.headlineLarge,
+            compact
+                ? 'Comment s\'appelle ton cheval ?'
+                : 'Comment s\'appelle\nton cheval ?',
+            style: titleStyle,
           ),
-          const SizedBox(height: AppSpacing.lg),
+          SizedBox(height: compact ? AppSpacing.md : AppSpacing.lg),
           TextField(
             controller: controller,
             textCapitalization: TextCapitalization.words,
@@ -427,22 +460,31 @@ class _HousingLocationStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final titleStyle = keyboardOpen
+        ? Theme.of(context).textTheme.headlineMedium
+        : Theme.of(context).textTheme.headlineLarge;
+
     return Padding(
-      padding: AppPagePadding.standard,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        keyboardOpen ? AppSpacing.sm : AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
       child: ListView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         children: [
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Où vit ton cheval ?',
-            style: Theme.of(context).textTheme.headlineLarge,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'On s’en sert pour la météo réelle de l’écurie.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: AppSpacing.md),
+          if (!keyboardOpen) const SizedBox(height: AppSpacing.md),
+          Text('Où vit ton cheval ?', style: titleStyle),
+          if (!keyboardOpen) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'On s’en sert pour la météo réelle de l’écurie.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+          SizedBox(height: keyboardOpen ? AppSpacing.sm : AppSpacing.md),
           LocationSearchField(initial: location, onChanged: onLocationChanged),
           const SizedBox(height: AppSpacing.lg),
           Text(
