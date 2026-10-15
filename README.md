@@ -33,6 +33,11 @@ flutter analyze
 
 Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Recommandations par plage & notifications
+
+Voir [docs/RECOMMENDATION_WINDOWS.md](docs/RECOMMENDATION_WINDOWS.md) : idéation et plan
+(plages actionnables ≤ 24 h, seuils de bascule, notifs matin/midi/soir).
+
 ## Publicité
 
 Voir [docs/ADS.md](docs/ADS.md). Interstitiels AdMob rares (après un retour ou au retour des prévisions). En debug : pubs de test Google. En release : tes IDs d’unité via `--dart-define`.
