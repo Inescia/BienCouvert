@@ -33,10 +33,11 @@ flutter analyze
 
 Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Recommandations par plage & notifications
+## Plages horaires & notifications
 
-Voir [docs/RECOMMENDATION_WINDOWS.md](docs/RECOMMENDATION_WINDOWS.md) : idéation et plan
-(plages actionnables ≤ 24 h, seuils de bascule, notifs matin/midi/soir).
+Voir [docs/RECOMMENDATION_WINDOWS.md](docs/RECOMMENDATION_WINDOWS.md) :
+plages saisies sur le profil (max 5), recommandations « Pour tes passages »,
+notifications locales au début de plage.
 
 ## Publicité
 

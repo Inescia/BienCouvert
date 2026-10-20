@@ -11,6 +11,7 @@ import '../../../horses/domain/horse_enums.dart';
 import '../../../weather/presentation/widgets/weather_now_card.dart';
 import '../providers.dart';
 import '../widgets/horse_switcher.dart';
+import '../widgets/passage_windows_card.dart';
 import '../widgets/recommendation_hero.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -257,10 +258,19 @@ class _HomeContent extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.md),
         ],
+        const SectionTitle('Recommandation par heure'),
+        const SizedBox(height: AppSpacing.sm),
         RecommendationHero(
           horseName: horse.name,
           period: current,
           onTap: () => _openTimeline(context, ref),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        const SectionTitle('Pour tes passages'),
+        const SizedBox(height: AppSpacing.sm),
+        PassageWindowsCard(
+          recommendations: state.windowRecommendations,
+          horseId: horse.id,
         ),
         const SizedBox(height: AppSpacing.lg),
         const SectionTitle('Dehors maintenant'),
@@ -273,7 +283,7 @@ class _HomeContent extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         if (next != null) ...[
-          const SectionTitle('Prochaine évolution'),
+          const SectionTitle('Évolution horaire'),
           const SizedBox(height: AppSpacing.sm),
           Material(
             color: Colors.transparent,

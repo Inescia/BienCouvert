@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../core/utils/json_codec.dart';
 import 'horse_enums.dart';
 import 'horse_location.dart';
+import 'horse_time_window.dart';
 
 /// Ajustement individuel issu des feedbacks (pas de ML).
 class HorsePersonalAdjustment extends Equatable {
@@ -59,6 +60,7 @@ class Horse extends Equatable {
     this.coatThickness = CoatThickness.medium,
     this.shelterAvailable = true,
     this.personalAdjustment = const HorsePersonalAdjustment(),
+    this.timeWindows = const [],
   });
 
   final String id;
@@ -72,6 +74,9 @@ class Horse extends Equatable {
   final bool shelterAvailable;
   final HorseLocation location;
   final HorsePersonalAdjustment personalAdjustment;
+
+  /// Plages horaires saisies (max [HorseTimeWindow.maxPerHorse]).
+  final List<HorseTimeWindow> timeWindows;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -85,6 +90,7 @@ class Horse extends Equatable {
     bool? shelterAvailable,
     HorseLocation? location,
     HorsePersonalAdjustment? personalAdjustment,
+    List<HorseTimeWindow>? timeWindows,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -98,6 +104,7 @@ class Horse extends Equatable {
       shelterAvailable: shelterAvailable ?? this.shelterAvailable,
       location: location ?? this.location,
       personalAdjustment: personalAdjustment ?? this.personalAdjustment,
+      timeWindows: timeWindows ?? this.timeWindows,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -113,6 +120,7 @@ class Horse extends Equatable {
     'shelterAvailable': shelterAvailable,
     'location': location.toJson(),
     'personalAdjustment': personalAdjustment.toJson(),
+    'timeWindows': timeWindows.map((w) => w.toJson()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
@@ -123,6 +131,16 @@ class Horse extends Equatable {
     final locationRaw = jsonMap(json['location']);
     if (id == null || name == null || locationRaw == null) {
       throw const FormatException('cheval incomplet');
+    }
+    final windowsRaw = json['timeWindows'];
+    final windows = <HorseTimeWindow>[];
+    if (windowsRaw is List) {
+      for (final item in windowsRaw) {
+        final map = jsonMap(item);
+        if (map == null) continue;
+        windows.add(HorseTimeWindow.fromJson(map));
+        if (windows.length >= HorseTimeWindow.maxPerHorse) break;
+      }
     }
     return Horse(
       id: id,
@@ -148,6 +166,7 @@ class Horse extends Equatable {
       personalAdjustment: HorsePersonalAdjustment.fromJson(
         jsonMap(json['personalAdjustment']) ?? const {},
       ),
+      timeWindows: windows,
       createdAt: jsonDate(json['createdAt']),
       updatedAt: jsonDate(json['updatedAt']),
     );
@@ -164,6 +183,7 @@ class Horse extends Equatable {
     shelterAvailable,
     location,
     personalAdjustment,
+    timeWindows,
     createdAt,
     updatedAt,
   ];
