@@ -14,6 +14,7 @@ import '../../horses/domain/horse_enums.dart';
 import '../../horses/domain/horse_repository.dart';
 import '../../recommendations/domain/recommendation.dart';
 import '../../recommendations/domain/recommendation_engine.dart';
+import '../../recommendations/domain/window_recommendation.dart';
 import '../../settings/data/local_settings_repository.dart';
 import '../../settings/domain/app_settings.dart';
 import '../../weather/data/local_weather_cache_repository.dart';
@@ -175,11 +176,13 @@ class HomeRecommendationState {
   const HomeRecommendationState({
     required this.timeline,
     required this.forecast,
+    this.windowRecommendations = const [],
     this.errorMessage,
   });
 
   final RecommendationTimeline? timeline;
   final HourlyForecast? forecast;
+  final List<WindowRecommendation> windowRecommendations;
   final String? errorMessage;
 
   RecommendationPeriod? get current => timeline?.current;
@@ -211,7 +214,11 @@ class HomeRecommendationNotifier
   Future<HomeRecommendationState> build() async {
     final horse = ref.watch(selectedHorseProvider);
     if (horse == null) {
-      return const HomeRecommendationState(timeline: null, forecast: null);
+      return const HomeRecommendationState(
+        timeline: null,
+        forecast: null,
+        windowRecommendations: [],
+      );
     }
     final gramStep = ref.watch(settingsProvider).value?.gramStep ?? 50;
     final useMock =
@@ -239,6 +246,7 @@ class HomeRecommendationNotifier
       return HomeRecommendationState(
         timeline: null,
         forecast: null,
+        windowRecommendations: const [],
         errorMessage:
             'Indique la commune de ${horse.name} pour adapter la météo.',
       );
@@ -256,6 +264,7 @@ class HomeRecommendationNotifier
       return HomeRecommendationState(
         timeline: null,
         forecast: forecast,
+        windowRecommendations: const [],
         errorMessage: 'Impossible de mettre à jour la météo',
       );
     }
@@ -267,9 +276,17 @@ class HomeRecommendationNotifier
       gramStep: gramStep,
     );
 
+    final windowRecommendations = const WindowRecommendationAggregator()
+        .forHorseWindows(
+          windows: horse.timeWindows,
+          hourly: timeline.hourly,
+          weather: forecast.hours,
+        );
+
     return HomeRecommendationState(
       timeline: timeline,
       forecast: forecast,
+      windowRecommendations: windowRecommendations,
       errorMessage: forecast.freshness == WeatherFreshness.unavailable
           ? 'Impossible de mettre à jour la météo'
           : forecast.freshness == WeatherFreshness.stale

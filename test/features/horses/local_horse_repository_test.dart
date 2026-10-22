@@ -6,8 +6,13 @@ import 'package:poney_au_chaud/features/horses/data/local_horse_repository.dart'
 import 'package:poney_au_chaud/features/horses/domain/horse.dart';
 import 'package:poney_au_chaud/features/horses/domain/horse_enums.dart';
 import 'package:poney_au_chaud/features/horses/domain/horse_location.dart';
+import 'package:poney_au_chaud/features/horses/domain/horse_time_window.dart';
 
-Horse _horse({required String id, required String name}) {
+Horse _horse({
+  required String id,
+  required String name,
+  List<HorseTimeWindow> timeWindows = const [],
+}) {
   final now = DateTime(2026, 2, 1);
   return Horse(
     id: id,
@@ -22,6 +27,7 @@ Horse _horse({required String id, required String name}) {
       longitude: -0.37,
       city: 'Caen',
     ),
+    timeWindows: timeWindows,
     createdAt: now,
     updatedAt: now,
   );
@@ -53,6 +59,29 @@ void main() {
     await repo.delete('1');
     expect((await repo.getAll()).map((h) => h.id), ['2']);
     expect(await repo.getById('1'), isNull);
+  });
+
+  test('persiste les plages horaires', () async {
+    final window = HorseTimeWindow.create(
+      startMinutes: 18 * 60,
+      endMinutes: 8 * 60,
+      notificationsEnabled: true,
+    );
+    await repo.save(_horse(id: '1', name: 'Nala', timeWindows: [window]));
+    final loaded = await repo.getById('1');
+    expect(loaded!.timeWindows, hasLength(1));
+    expect(loaded.timeWindows.single.startMinutes, 18 * 60);
+    expect(loaded.timeWindows.single.endMinutes, 8 * 60);
+    expect(loaded.timeWindows.single.notificationsEnabled, isTrue);
+  });
+
+  test('cheval sans timeWindows reste valide', () async {
+    final store = LocalJsonStore(directory: dir);
+    final json = _horse(id: 'legacy', name: 'Pepito').toJson()
+      ..remove('timeWindows');
+    await store.writeList('horses.json', [json]);
+    final all = await repo.getAll();
+    expect(all.single.timeWindows, isEmpty);
   });
 
   test('ignore un JSON cheval invalide', () async {

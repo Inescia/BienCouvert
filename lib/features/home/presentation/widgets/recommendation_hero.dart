@@ -54,14 +54,14 @@ class RecommendationHero extends StatelessWidget {
               GramBadge(label: period.grams.heroLabel, large: true),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'recommandé maintenant',
+                'recommandation par heure',
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(color: AppColors.pine),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'jusqu\'à ${formatHour(period.end)}',
+                'valable jusqu\'à ${formatHour(period.end)}',
                 style: Theme.of(
                   context,
                 ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),

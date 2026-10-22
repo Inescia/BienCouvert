@@ -6,10 +6,13 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_widgets.dart';
 import '../../../home/presentation/providers.dart';
+import '../../../notifications/presentation/notification_scheduler.dart';
 import '../../domain/horse.dart';
 import '../../domain/horse_enums.dart';
 import '../../domain/horse_location.dart';
+import '../../domain/horse_time_window.dart';
 import '../widgets/location_search_field.dart';
+import '../widgets/time_windows_section.dart';
 
 class HorseEditorScreen extends ConsumerStatefulWidget {
   const HorseEditorScreen({super.key, required this.horseId});
@@ -29,6 +32,7 @@ class _HorseEditorScreenState extends ConsumerState<HorseEditorScreen> {
   bool _saving = false;
   Horse? _existing;
   HorseLocation? _location;
+  List<HorseTimeWindow> _timeWindows = const [];
 
   @override
   void initState() {
@@ -50,6 +54,7 @@ class _HorseEditorScreenState extends ConsumerState<HorseEditorScreen> {
         _coat = horse.coatThickness;
         _housing = horse.housingType;
         _sensitivity = horse.coldSensitivity;
+        _timeWindows = List<HorseTimeWindow>.from(horse.timeWindows);
       });
     } catch (_) {}
   }
@@ -85,11 +90,13 @@ class _HorseEditorScreenState extends ConsumerState<HorseEditorScreen> {
       location: location,
       personalAdjustment:
           _existing?.personalAdjustment ?? const HorsePersonalAdjustment(),
+      timeWindows: _timeWindows.take(HorseTimeWindow.maxPerHorse).toList(),
       createdAt: _existing?.createdAt ?? now,
       updatedAt: now,
     );
     await ref.read(horsesProvider.notifier).save(horse);
     await ref.read(settingsProvider.notifier).selectHorse(horse.id);
+    await ref.read(notificationSchedulerProvider).syncForHorse(horse);
     if (mounted) context.pop();
   }
 
@@ -118,7 +125,9 @@ class _HorseEditorScreenState extends ConsumerState<HorseEditorScreen> {
       ),
     );
     if (ok == true) {
-      await ref.read(horsesProvider.notifier).delete(_existing!.id);
+      final id = _existing!.id;
+      await ref.read(notificationServiceProvider).cancelHorse(id);
+      await ref.read(horsesProvider.notifier).delete(id);
       if (mounted) context.go('/horses');
     }
   }
@@ -219,6 +228,11 @@ class _HorseEditorScreenState extends ConsumerState<HorseEditorScreen> {
               ),
             ),
           ],
+          const SizedBox(height: AppSpacing.xl),
+          TimeWindowsSection(
+            windows: _timeWindows,
+            onChanged: (next) => setState(() => _timeWindows = next),
+          ),
           const SizedBox(height: AppSpacing.xl),
           PrimaryButton(
             label: 'Enregistrer',
