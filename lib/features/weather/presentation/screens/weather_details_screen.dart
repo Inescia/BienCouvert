@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_widgets.dart';
 import '../../../home/presentation/providers.dart';
 import '../../domain/hourly_weather.dart';
+import '../widgets/weather_daily_forecast.dart';
+import '../widgets/weather_hourly_chart.dart';
 import '../widgets/weather_now_card.dart';
 
 class WeatherDetailsScreen extends ConsumerWidget {
@@ -46,7 +47,7 @@ class WeatherDetailsScreen extends ConsumerWidget {
             }
 
             final current = state.currentWeather;
-            final groups = _groupHoursByDay(hours);
+            final days = groupWeatherByDay(hours);
 
             return RefreshIndicator(
               color: AppColors.pine,
@@ -61,15 +62,15 @@ class WeatherDetailsScreen extends ConsumerWidget {
                       weather: current,
                       location: location,
                       forecast: state.forecast!,
+                      dayHigh: days.isNotEmpty ? days.first.maxTemp : null,
+                      dayLow: days.isNotEmpty ? days.first.minTemp : null,
                     ),
                     const SizedBox(height: AppSpacing.lg),
                   ],
-                  const SectionTitle('Heure par heure'),
-                  const SizedBox(height: AppSpacing.md),
-                  for (final group in groups) ...[
-                    _DayForecast(group: group, current: current),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
+                  WeatherHourlyChart(hours: hours, current: current),
+                  const SizedBox(height: AppSpacing.lg),
+                  WeatherDailyForecast(days: days),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             );
@@ -77,157 +78,6 @@ class WeatherDetailsScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-}
-
-class _DayForecast extends StatelessWidget {
-  const _DayForecast({required this.group, this.current});
-
-  final _DayHours group;
-  final HourlyWeather? current;
-
-  @override
-  Widget build(BuildContext context) {
-    final temps = group.hours.map((h) => h.temperature);
-    final min = temps.reduce((a, b) => a < b ? a : b).round();
-    final max = temps.reduce((a, b) => a > b ? a : b).round();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm, left: 2),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  formatForecastDayLabel(group.day),
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ),
-              Text(
-                '$min° / $max°',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.muted,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-        ),
-        AppSurface(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-            horizontal: AppSpacing.sm,
-          ),
-          child: Column(
-            children: [
-              for (var i = 0; i < group.hours.length; i++) ...[
-                if (i > 0)
-                  Divider(
-                    height: 1,
-                    color: AppColors.divider.withValues(alpha: 0.55),
-                  ),
-                _HourRow(
-                  hour: group.hours[i],
-                  isNow: current?.timestamp == group.hours[i].timestamp,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HourRow extends StatelessWidget {
-  const _HourRow({required this.hour, required this.isNow});
-
-  final HourlyWeather hour;
-  final bool isNow;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final night = isWeatherNight(hour.timestamp);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 10,
-      ),
-      decoration: BoxDecoration(
-        color: isNow ? AppColors.sageSoft.withValues(alpha: 0.55) : null,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 44,
-            child: Text(
-              formatHour(hour.timestamp),
-              style: textTheme.titleMedium?.copyWith(
-                color: isNow ? AppColors.pine : AppColors.chocolate,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          Icon(
-            weatherConditionIcon(hour.condition, night: night),
-            size: 22,
-            color: AppColors.pine,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          SizedBox(
-            width: 44,
-            child: Text(
-              '${hour.temperature.round()}°',
-              style: textTheme.titleLarge?.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isNow
-                      ? 'Maintenant · ${hour.condition.labelFr}'
-                      : hour.condition.labelFr,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyMedium?.copyWith(
-                    fontWeight: isNow ? FontWeight.w600 : FontWeight.w400,
-                    color: isNow ? AppColors.pine : AppColors.chocolateSoft,
-                  ),
-                ),
-                Text(
-                  _hourMeta(hour),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _hourMeta(HourlyWeather hour) {
-    final parts = <String>[
-      '${hour.windSpeed.round()} km/h',
-      '${hour.humidity.round()} % humidité',
-    ];
-    if (hour.precipitation > 0) {
-      parts.add('${hour.precipitation.toStringAsFixed(1)} mm');
-    } else if (hour.precipitationProbability >= 40) {
-      parts.add('${hour.precipitationProbability.round()} % pluie');
-    }
-    return parts.join(' · ');
   }
 }
 
@@ -276,28 +126,4 @@ class _MessageState extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DayHours {
-  const _DayHours({required this.day, required this.hours});
-
-  final DateTime day;
-  final List<HourlyWeather> hours;
-}
-
-List<_DayHours> _groupHoursByDay(List<HourlyWeather> hours) {
-  final groups = <_DayHours>[];
-  for (final hour in hours) {
-    final day = DateTime(
-      hour.timestamp.year,
-      hour.timestamp.month,
-      hour.timestamp.day,
-    );
-    if (groups.isEmpty || groups.last.day != day) {
-      groups.add(_DayHours(day: day, hours: [hour]));
-    } else {
-      groups.last.hours.add(hour);
-    }
-  }
-  return groups;
 }

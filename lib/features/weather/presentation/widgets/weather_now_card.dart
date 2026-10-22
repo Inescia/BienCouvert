@@ -12,12 +12,16 @@ class WeatherNowCard extends StatelessWidget {
     required this.weather,
     required this.forecast,
     this.location,
+    this.dayHigh,
+    this.dayLow,
     this.onTap,
   });
 
   final HourlyWeather weather;
   final HourlyForecast forecast;
   final String? location;
+  final double? dayHigh;
+  final double? dayLow;
   final VoidCallback? onTap;
 
   @override
@@ -82,7 +86,7 @@ class WeatherNowCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Ressenti ${weather.feelsLike.round()}°',
+                      _subtitle(),
                       style: textTheme.bodyMedium?.copyWith(
                         color: AppColors.muted,
                       ),
@@ -146,6 +150,14 @@ class WeatherNowCard extends StatelessWidget {
     if (onTap == null) return card;
 
     return GestureDetector(onTap: onTap, child: card);
+  }
+
+  String _subtitle() {
+    final parts = <String>['Ressenti ${weather.feelsLike.round()}°'];
+    if (dayHigh != null && dayLow != null) {
+      parts.add('Max ${dayHigh!.round()}° · Min ${dayLow!.round()}°');
+    }
+    return parts.join(' · ');
   }
 }
 
